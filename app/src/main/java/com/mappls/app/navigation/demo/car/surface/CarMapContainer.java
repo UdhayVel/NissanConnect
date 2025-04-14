@@ -9,39 +9,45 @@ import android.graphics.PointF;
 import android.location.Location;
 import android.os.Looper;
 import android.util.Log;
-import android.util.TypedValue;
 import android.view.View;
 import android.view.WindowManager;
 import android.view.animation.DecelerateInterpolator;
-import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.annotation.RequiresPermission;
 import androidx.car.app.CarContext;
+import androidx.car.app.CarToast;
 import androidx.core.content.ContextCompat;
 import androidx.core.view.ViewCompat;
-import androidx.fragment.app.Fragment;
 import androidx.lifecycle.DefaultLifecycleObserver;
 import androidx.lifecycle.Lifecycle;
 import androidx.lifecycle.LifecycleOwner;
 
-import com.mappls.app.navigation.demo.HomeActivity;
 import com.mappls.app.navigation.demo.NavApplication;
 import com.mappls.app.navigation.demo.R;
+import com.mappls.app.navigation.demo.car.extensions.CarContextUtils;
 import com.mappls.app.navigation.demo.car.extensions.ThreadUtils;
-import com.mappls.app.navigation.demo.fragment.HomeFragment;
-import com.mappls.sdk.direction.ui.DirectionFragment;
+import com.mappls.app.navigation.demo.maps.plugins.BearingIconPlugin;
+import com.mappls.app.navigation.demo.maps.plugins.DirectionPolylinePlugin;
+import com.mappls.app.navigation.demo.maps.plugins.RouteArrowPlugin;
+import com.mappls.app.navigation.demo.utils.NavigationLocationEngine;
+import com.mappls.app.navigation.demo.utils.directionutils.DirectionUtils;
+import com.mappls.sdk.geojson.LineString;
+import com.mappls.sdk.geojson.Point;
 import com.mappls.sdk.maps.MapView;
 import com.mappls.sdk.maps.Mappls;
 import com.mappls.sdk.maps.MapplsMap;
 import com.mappls.sdk.maps.MapplsMapOptions;
 import com.mappls.sdk.maps.OnMapReadyCallback;
 import com.mappls.sdk.maps.Style;
+import com.mappls.sdk.maps.annotations.Marker;
 import com.mappls.sdk.maps.annotations.MarkerOptions;
+import com.mappls.sdk.maps.annotations.Polyline;
 import com.mappls.sdk.maps.camera.CameraUpdateFactory;
 import com.mappls.sdk.maps.constants.MapplsConstants;
 import com.mappls.sdk.maps.geometry.LatLng;
+import com.mappls.sdk.maps.geometry.LatLngBounds;
 import com.mappls.sdk.maps.location.LocationComponent;
 import com.mappls.sdk.maps.location.LocationComponentActivationOptions;
 import com.mappls.sdk.maps.location.LocationComponentOptions;
@@ -52,25 +58,23 @@ import com.mappls.sdk.maps.location.engine.LocationEngineResult;
 import com.mappls.sdk.maps.location.modes.CameraMode;
 import com.mappls.sdk.maps.location.modes.RenderMode;
 import com.mappls.sdk.maps.location.permissions.PermissionsManager;
-import com.mappls.app.navigation.demo.car.extensions.CarContextUtils;
+import com.mappls.sdk.navigation.MapplsNavigationHelper;
 import com.mappls.sdk.navigation.NavigationContext;
-import com.mappls.sdk.services.api.OnResponseCallback;
-import com.mappls.sdk.services.api.Place;
-import com.mappls.sdk.services.api.PlaceResponse;
-import com.mappls.sdk.services.api.autosuggest.model.ELocation;
-import com.mappls.sdk.services.api.reversegeocode.MapplsReverseGeoCode;
-import com.mappls.sdk.services.api.reversegeocode.MapplsReverseGeoCodeManager;
+import com.mappls.sdk.services.api.directions.models.DirectionsRoute;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
 import timber.log.Timber;
 
-public class CarMapContainer implements DefaultLifecycleObserver, LocationEngineCallback<LocationEngineResult> {
+public class CarMapContainer implements DefaultLifecycleObserver, LocationEngineCallback<LocationEngineResult>, MapplsMap.OnMapLongClickListener {
 
     private CarContext carContext;
     public static MapView mapViewInstance;
     public static MapplsMap mapplsMap;
+    public static Marker secondaryMarker;
+    public boolean firstFix = false;
     public static Integer surfaceWidth;
     public static Integer surfaceHeight;
     private Animator scaleAnimator;
@@ -78,9 +82,18 @@ public class CarMapContainer implements DefaultLifecycleObserver, LocationEngine
     private LocationEngine locationEngine;
 
     private NavApplication app;
+    private Polyline routePolyline;
 
     public static final String LOG_TAG = "CarMapContainer";
     public static final float DOUBLE_CLICK_FACTOR = 2.0F;
+
+    public static DirectionPolylinePlugin directionPolylinePlugin;
+    //    public static MapEventsPlugin mapEventsPlugin;
+    public static RouteArrowPlugin routeArrowPlugin;
+    public static BearingIconPlugin bearingIconPlugin;
+    private LocationComponent locationPlugin;
+
+    private NavigationLocationEngine navigationLocationEngine;
 
     public CarMapContainer(CarContext carContext, Lifecycle lifecycle) {
         this.carContext = carContext;
@@ -91,9 +104,20 @@ public class CarMapContainer implements DefaultLifecycleObserver, LocationEngine
         return ((NavApplication) carContext.getApplicationContext());
     }
 
+
+    @Override
+    public void onDestroy(@NonNull LifecycleOwner owner) {
+        DefaultLifecycleObserver.super.onDestroy(owner);
+
+        if (locationEngine != null) {
+            locationEngine.removeLocationUpdates(this);
+        }
+    }
+
     @Override
     public void onCreate(@NonNull LifecycleOwner owner) {
         Mappls.getInstance(carContext);
+        navigationLocationEngine = new NavigationLocationEngine();
 
         try {
             app = getMyApplication();
@@ -111,17 +135,21 @@ public class CarMapContainer implements DefaultLifecycleObserver, LocationEngine
                 @Override
                 public void onMapReady(@NonNull MapplsMap map) {
                     mapplsMap = map;
-
-                    map.setStyle(new Style.Builder().fromJson("https://demotiles.maplibre.org/style.json"));
-
+                    Log.e("Mapps", mapplsMap.toString());
                     map.getStyle(style -> {
                         try {
-                            enableLocationComponent(style);
                             mapplsMap.enableTraffic(true);
-                            mapplsMap.setMaxZoomPreference(22);
+                            directionPolylinePlugin = new DirectionPolylinePlugin(mapViewInstance, map);
+                            enableLocationComponent(style);
+
+                            bearingIconPlugin = new BearingIconPlugin(mapViewInstance, mapplsMap);
+                            routeArrowPlugin = new RouteArrowPlugin(mapViewInstance, mapplsMap);
+                            mapplsMap.setMaxZoomPreference(18.5);
                             mapplsMap.setMinZoomPreference(4);
 
+                            mapplsMap.addOnMapLongClickListener(CarMapContainer.this);
                             setCompassDrawable();
+
                         } catch (SecurityException e) {
                             Log.e(LOG_TAG, "Location permission not granted", e);
                         }
@@ -136,58 +164,44 @@ public class CarMapContainer implements DefaultLifecycleObserver, LocationEngine
         });
     }
 
-
-    public void getReverseGeoCode(LatLng latLng) {
-        MapplsReverseGeoCode reverseGeoCode = MapplsReverseGeoCode.builder()
-                .setLocation(latLng.getLatitude(), latLng.getLongitude())
-                .build();
-        MapplsReverseGeoCodeManager.newInstance(reverseGeoCode).call(new OnResponseCallback<PlaceResponse>() {
-            @Override
-            public void onSuccess(PlaceResponse placeResponse) {
-                if(placeResponse != null) {
-                    List<Place> placesList = placeResponse.getPlaces();
-                    Place place = placesList.get(0);
-
-                    ELocation eLocation = new ELocation();
-                    eLocation.entryLongitude = latLng.getLongitude();
-                    eLocation.longitude = latLng.getLongitude();
-                    eLocation.entryLatitude = latLng.getLatitude();
-                    eLocation.latitude = latLng.getLatitude();
-                    eLocation.placeName = place.getFormattedAddress();
-
-//                    if(mapplsMap != null) {
-//                        mapplsMap.addMarker(new MarkerOptions().title(eLocation.placeName).position(new LatLng(place.getLat(), place.getLng())));
-//                    }
-
-                    eLocation.placeAddress = carContext.getString(R.string.point_on_map);
-                    app.setELocation(eLocation);
-                }
-            }
-
-            @Override
-            public void onError(int i, String s) {
-            }
-        });
+    @Override
+    public void onStart(@NonNull LifecycleOwner owner) {
+        DefaultLifecycleObserver.super.onStart(owner);
     }
+
+    @Override
+    public void onResume(@NonNull LifecycleOwner owner) {
+        DefaultLifecycleObserver.super.onResume(owner);
+    }
+
+    @Override
+    public void onPause(@NonNull LifecycleOwner owner) {
+        DefaultLifecycleObserver.super.onPause(owner);
+    }
+
+    @Override
+    public void onStop(@NonNull LifecycleOwner owner) {
+        DefaultLifecycleObserver.super.onStop(owner);
+    }
+
+
 
 
     public void setCompassDrawable() {
         mapViewInstance.getCompassView().setBackgroundResource(R.drawable.compass_background);
         assert mapplsMap.getUiSettings() != null;
-        mapplsMap.getUiSettings().setCompassImage(Objects.requireNonNull(ContextCompat.getDrawable(carContext, R.drawable.compass_north_up)));
-        int padding = dpToPx(carContext, 8);
-        int elevation = dpToPx(carContext,8);
+        mapplsMap.getUiSettings()
+                .setCompassImage(Objects.requireNonNull(ContextCompat.getDrawable(carContext, R.drawable.compass_north_up)));
+        int padding = dpToPx(8);
+        int elevation = dpToPx(8);
         mapViewInstance.getCompassView().setPadding(padding, padding, padding, padding);
         ViewCompat.setElevation(mapViewInstance.getCompassView(), elevation);
-        mapplsMap.getUiSettings().setCompassMargins(dpToPx(carContext,20), dpToPx(carContext,100), dpToPx(carContext,20), dpToPx(carContext,20));
+        mapplsMap.getUiSettings().setCompassMargins(dpToPx(20), dpToPx(100), dpToPx(20), dpToPx(20));
     }
 
-    public static int dpToPx(CarContext carContext, float dp) {
-        return (int) TypedValue.applyDimension(
-                TypedValue.COMPLEX_UNIT_DIP,
-                dp,
-                carContext.getResources().getDisplayMetrics()
-        );
+
+    public int dpToPx(final float dp) {
+        return (int) (dp * app.getResources().getDisplayMetrics().density);
     }
 
 
@@ -200,20 +214,12 @@ public class CarMapContainer implements DefaultLifecycleObserver, LocationEngine
         int currentZoom = mapplsMap != null ? mapplsMap.getPrefetchZoomDelta() : 0;
 
         if (currentZoom != 0) {
-            scaleAnimator = createScaleAnimator(
-                    currentZoom,
-                    isZoomIn ? 1.0 : -1.0,
-                    zoomFocalPoint
-            );
+            scaleAnimator = createScaleAnimator(currentZoom, isZoomIn ? 1.0 : -1.0, zoomFocalPoint);
             scaleAnimator.start();
         }
     }
 
-    private Animator createScaleAnimator(
-            int currentZoom,
-            double zoomAddition,
-            PointF animationFocalPoint
-    ) {
+    private Animator createScaleAnimator(int currentZoom, double zoomAddition, PointF animationFocalPoint) {
         ValueAnimator animator = ValueAnimator.ofFloat((float) currentZoom, (float) (currentZoom + zoomAddition));
         animator.setDuration(MapplsConstants.ANIMATION_DURATION);
         animator.setInterpolator(new DecelerateInterpolator());
@@ -265,13 +271,7 @@ public class CarMapContainer implements DefaultLifecycleObserver, LocationEngine
     }
 
     private WindowManager.LayoutParams getWindowManagerLayoutParams() {
-        return new WindowManager.LayoutParams(
-                surfaceWidth != null ? surfaceWidth : WindowManager.LayoutParams.MATCH_PARENT,
-                surfaceHeight != null ? surfaceHeight : WindowManager.LayoutParams.MATCH_PARENT,
-                WindowManager.LayoutParams.TYPE_PRIVATE_PRESENTATION,
-                WindowManager.LayoutParams.FLAG_HARDWARE_ACCELERATED,
-                PixelFormat.RGBX_8888
-        );
+        return new WindowManager.LayoutParams(surfaceWidth != null ? surfaceWidth : WindowManager.LayoutParams.MATCH_PARENT, surfaceHeight != null ? surfaceHeight : WindowManager.LayoutParams.MATCH_PARENT, WindowManager.LayoutParams.TYPE_PRIVATE_PRESENTATION, WindowManager.LayoutParams.FLAG_HARDWARE_ACCELERATED, PixelFormat.RGBX_8888);
     }
 
     @RequiresPermission(allOf = {Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION})
@@ -280,46 +280,63 @@ public class CarMapContainer implements DefaultLifecycleObserver, LocationEngine
             LocationComponentOptions options = LocationComponentOptions.builder(carContext)
                     .trackingGesturesManagement(true)
                     .accuracyAlpha(0f)
-                    .accuracyColor(ContextCompat.getColor(carContext, R.color.accuracy_green))
-                    .build();
+                    .accuracyColor(ContextCompat.getColor(carContext, R.color.colorAccent)).build();
 
-            LocationComponent locationComponent = mapplsMap.getLocationComponent();
+            locationPlugin = mapplsMap.getLocationComponent();
 
-            LocationComponentActivationOptions activationOptions = LocationComponentActivationOptions.builder(carContext, style)
+            LocationComponentActivationOptions activationOptions = LocationComponentActivationOptions
+                    .builder(carContext, style)
                     .locationComponentOptions(options)
+//                    .locationEngine(navigationLocationEngine)
                     .build();
 
-            locationComponent.activateLocationComponent(activationOptions);
-            locationComponent.setLocationComponentEnabled(true);
+            locationPlugin.activateLocationComponent(activationOptions);
+            locationPlugin.setLocationComponentEnabled(true);
 
-            locationEngine = locationComponent.getLocationEngine();
-            LocationEngineRequest request = new LocationEngineRequest.Builder(1000)
-                    .setPriority(LocationEngineRequest.PRIORITY_HIGH_ACCURACY)
-                    .setFastestInterval(100)
-                    .build();
+            locationEngine = locationPlugin.getLocationEngine();
+            LocationEngineRequest request = new LocationEngineRequest.Builder(10 * 1000).setPriority(LocationEngineRequest.PRIORITY_HIGH_ACCURACY).setFastestInterval(100).build();
 
             if (locationEngine != null) {
                 locationEngine.requestLocationUpdates(request, this, Looper.getMainLooper());
             }
 
-            locationComponent.setCameraMode(CameraMode.TRACKING);
-            locationComponent.setRenderMode(RenderMode.COMPASS);
+            locationPlugin.setCameraMode(CameraMode.TRACKING);
+            locationPlugin.setRenderMode(RenderMode.COMPASS);
         }
     }
 
     @Override
     public void onSuccess(@Nullable LocationEngineResult locationEngineResult) {
         Log.e("locationn::", String.valueOf(locationEngineResult));
-        if(locationEngineResult != null) {
+        if (locationEngineResult != null) {
             Location location = locationEngineResult.getLastLocation();
             Timber.i("onLocationChanged");
             try {
-                if (location == null || location.getLatitude() <= 0)
-                    return;
+                if (location == null || location.getLatitude() <= 0) return;
 
-                mapplsMap.animateCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(location), 16), 500);
+                LatLng sourceLatLng = new LatLng(location.getLatitude(), location.getLongitude());
+                LatLng destLatLng = new LatLng(12.737430948595877, 80.00507178028703);
 
-                getReverseGeoCode(new LatLng(location.getLatitude(), location.getLongitude()));
+                if(!firstFix) {
+                    firstFix = true;
+                    mapplsMap.animateCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(location), 14), 500);
+                }
+//                if (routePolyline != null) {
+//                    mapplsMap.removePolyline(routePolyline);
+//                }
+//                routePolyline = mapplsMap.addPolyline(new PolylineOptions().add(sourceLatLng).add(destLatLng).color(Color.parseColor("#3bb2d0")).width(2));
+
+//                DirectionPoint originPoint = DirectionPoint.setDirection();
+//                DirectionPoint destPoint̉ = DirectionPoint.setDirection();
+//
+//                DirectionOptions directionOptions = DirectionOptions.builder().alongRouteBuffer(200)
+//                        .origin(originPoint)
+//                        .destination(destPoint̉)
+//                        .searchAlongRoute(true)
+//                        .resource(DirectionsCriteria.RESOURCE_DISTANCE_TRAFFIC)
+//                        .showAlternative(true)
+//                        .profile(DirectionsCriteria.PROFILE_DRIVING)
+//                        .overview(DirectionsCriteria.OVERVIEW_FULL).build();
 
                 NavigationContext.getNavigationContext().setCurrentLocation(location);
             } catch (Exception e) {
@@ -332,21 +349,77 @@ public class CarMapContainer implements DefaultLifecycleObserver, LocationEngine
     public void onFailure(@NonNull Exception exception) {
         Log.e("locationnException::", exception.toString());
     }
+
     public void setSurfaceSize(int surfaceWidth, int surfaceHeight) {
         Log.v(LOG_TAG, "setSurfaceSize: " + surfaceWidth + ", " + surfaceHeight);
 
-        if (!Integer.valueOf(surfaceWidth).equals(this.surfaceWidth) ||
-                !Integer.valueOf(surfaceHeight).equals(this.surfaceHeight)) {
+        if (!Integer.valueOf(surfaceWidth).equals(this.surfaceWidth) || !Integer.valueOf(surfaceHeight).equals(this.surfaceHeight)) {
 
             this.surfaceWidth = surfaceWidth;
             this.surfaceHeight = surfaceHeight;
 
             if (mapViewInstance != null) {
-                CarContextUtils.windowManager(carContext).updateViewLayout(
-                        mapViewInstance,
-                        getWindowManagerLayoutParams()
-                );
+                CarContextUtils.windowManager(carContext).updateViewLayout(mapViewInstance, getWindowManagerLayoutParams());
             }
         }
+    }
+
+    public void addMarker(LatLng latLng){
+//        LatLng selectedLocationLatLng = new LatLng(eLocation.latitude, eLocation.longitude);
+        if(secondaryMarker != null){
+            mapplsMap.removeMarker(secondaryMarker);
+        }
+        secondaryMarker = mapplsMap.addMarker(new MarkerOptions().position(latLng));
+        mapplsMap.animateCamera(CameraUpdateFactory.newLatLngZoom(latLng, 14));
+        if (latLng.getLatitude() > 0) {
+            DirectionUtils.getReverseGeoCode(carContext, latLng);
+        }
+    }
+
+
+    private void drawPolyLine() {
+        Log.e("carContext:: ", carContext+"");
+        if (carContext == null)
+            return;
+        ArrayList<Point> points = new ArrayList<>();
+        String locations = MapplsNavigationHelper.getInstance().getCurrentRoute().geometry();
+
+        Log.e("locationnsss:: ", ""+MapplsNavigationHelper.getInstance().getCurrentRoute().geometry());
+        if (directionPolylinePlugin != null) {
+            LatLng latLng = null;
+            if (app.getELocation() != null && app.getELocation().latitude != null && app.getELocation().longitude != null) {
+                latLng = new LatLng(app.getELocation().latitude, app.getELocation().longitude);
+            }
+            List<LineString> listOfPoint = new ArrayList<>();
+            listOfPoint.add(LineString.fromPolyline(locations, 6));
+            List<LatLng> wayPoints = new ArrayList<>();
+            for (int i = 0; i < app.getTrip().waypoints().size() - 1; i++) {
+                if (i != 0) {
+                    Point point = app.getTrip().waypoints().get(i).location();
+                    wayPoints.add(new LatLng(point.latitude(), point.longitude()));
+                }
+            }
+
+
+            List<DirectionsRoute> directionsRoutes = new ArrayList<>();
+            directionsRoutes.add(MapplsNavigationHelper.getInstance().getCurrentRoute());
+            directionPolylinePlugin.setTrips(listOfPoint, null, latLng, wayPoints, directionsRoutes); // need to add way point
+            directionPolylinePlugin.setEnabled(true);
+
+            if (points.size() > 1) {
+                LatLngBounds bounds = new LatLngBounds.Builder().includes(wayPoints).build();
+
+                mapplsMap.animateCamera(CameraUpdateFactory.newLatLngBounds(bounds, 0));
+            }
+
+
+        }
+    }
+
+    @Override
+    public boolean onMapLongClick(@NonNull LatLng latLng) {
+        CarToast.makeText(carContext, "Long clicked", CarToast.LENGTH_SHORT).show();
+        addMarker(latLng);
+        return false;
     }
 }

@@ -11,11 +11,12 @@ import androidx.car.app.navigation.model.NavigationTemplate;
 import androidx.core.graphics.drawable.IconCompat;
 
 import com.mappls.app.navigation.demo.R;
+import com.mappls.app.navigation.demo.car.extensions.CarContextUtils;
+import com.mappls.app.navigation.demo.car.screens.interfaceclasses.SelectLocationCallBack;
+import com.mappls.app.navigation.demo.car.screens.models.LocationList;
 import com.mappls.app.navigation.demo.car.surface.CarMapRenderer;
 
-import java.security.cert.CertPathBuilder;
-
-public class CarMapScreen extends Screen {
+public class CarMapScreen extends Screen implements SelectLocationCallBack {
     CarContext carContext;
     CarMapRenderer carMapRenderer;
 
@@ -39,11 +40,12 @@ public class CarMapScreen extends Screen {
     private ActionStrip.Builder buildActionStrip() {
         ActionStrip.Builder actionStripBuilder = new ActionStrip.Builder();
         actionStripBuilder.addAction(new Action.Builder().setIcon(new CarIcon.Builder(IconCompat.createWithResource(carContext, R.drawable.ic_search_grey_24dp)).build()).setOnClickListener(() -> {
-//            CarContextUtils.screenManager(carContext).push(SearchScreen(carContext));
+
         }).build());
         actionStripBuilder.addAction(new Action.Builder()
                 //setTitle("Menu") //There can be only 1 with a title
-                .setIcon(new CarIcon.Builder(IconCompat.createWithResource(carContext, R.drawable.ic_clear)).build()).setOnClickListener(() -> {
+                .setIcon(new CarIcon.Builder(IconCompat.createWithResource(carContext, R.drawable.ic_location_on_black_24dp)).build()).setOnClickListener(() -> {
+                    CarContextUtils.screenManager(carContext).push(new LocationListScreen(carContext, this));
                 }).build());
         return actionStripBuilder;
     }
@@ -68,4 +70,8 @@ public class CarMapScreen extends Screen {
         return actionStripBuilder;
     }
 
+    @Override
+    public void setSelectedLocation(LocationList location) {
+        carMapRenderer.setSelectedLocation(location);
+    }
 }

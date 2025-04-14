@@ -28,11 +28,13 @@ import androidx.lifecycle.LifecycleOwner;
 
 import com.mappls.app.navigation.demo.R;
 import com.mappls.app.navigation.demo.car.extensions.ThreadUtils;
+import com.mappls.app.navigation.demo.car.screens.interfaceclasses.SelectLocationCallBack;
+import com.mappls.app.navigation.demo.car.screens.models.LocationList;
 import com.mappls.sdk.maps.MapView;
 import com.mappls.sdk.maps.camera.CameraUpdate;
 import com.mappls.sdk.maps.camera.CameraUpdateFactory;
 
-public class CarMapRenderer implements SurfaceCallback, DefaultLifecycleObserver, ICarMapRenderer {
+public class CarMapRenderer implements SurfaceCallback, DefaultLifecycleObserver, ICarMapRenderer, SelectLocationCallBack {
 
     private static final String LOG_TAG = "CarMapRenderer";
 
@@ -214,5 +216,11 @@ public class CarMapRenderer implements SurfaceCallback, DefaultLifecycleObserver
     @Override
     public void onFling(float velocityX, float velocityY) {
 
+    }
+
+    @Override
+    public void setSelectedLocation(LocationList location) {
+        Log.v("locationCallBack:: ", "setSelectedLocation " + location.getLatLng());
+        mapContainer.addMarker(location.getLatLng());
     }
 }
