@@ -1,0 +1,332 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.coordinatorlayout.widget.CoordinatorLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    tools:ignore="RtlHardcoded,ContentDescription,RtlSymmetry"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+
+    <!--Content-->
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
+
+        <LinearLayout
+            android:background="@color/app_blue"
+            android:id="@+id/next_advise_container"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="98dp"
+            android:orientation="horizontal"
+            android:paddingLeft="10dp"
+            android:paddingTop="8dp"
+            android:paddingRight="10dp"
+            android:paddingBottom="8dp"
+            android:visibility="gone"
+            app:layout_constraintLeft_toLeftOf="parent"
+            app:layout_constraintTop_toTopOf="@+id/top_strip_layout"
+            tools:visibility="visible">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/then"
+                android:textColor="@android:color/white"
+                android:textSize="@dimen/font_large"
+                />
+            <ImageView
+                    android:layout_marginLeft="10dp"
+                    android:id="@+id/next_instruction_image_view"
+                    android:layout_width="20dp"
+                    android:layout_height="20dp"/>
+
+        </LinearLayout>
+
+        <RelativeLayout
+            android:id="@+id/top_strip_layout"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            tools:ignore="MissingConstraints">
+
+            <com.mappls.app.navigation.demo.views.NonSwipeableViewPager
+                android:id="@+id/navigation_info_layout_new"
+                android:layout_width="match_parent"
+                android:layout_height="210dp"
+                android:layout_alignParentTop="true"
+                android:background="@android:color/transparent"
+                android:focusable="true"
+                tools:ignore="SpeakableTextPresentCheck" />
+
+            <RelativeLayout
+                android:layout_width="match_parent"
+                android:layout_height="100dp">
+
+                <ImageButton
+                    android:id="@+id/navigation_strip_left_image_button"
+                    android:layout_width="@dimen/manoeuvre_icon_image_size"
+                    android:layout_height="@dimen/manoeuvre_icon_image_size"
+                    android:layout_alignParentStart="true"
+                    android:layout_alignParentLeft="true"
+                    android:layout_centerVertical="true"
+                    android:layout_gravity="center"
+                    android:background="@android:color/transparent"
+                    android:gravity="center"
+                    app:srcCompat="@drawable/ic_chevron_left_white_24dp"
+                    app:tint="@color/colorGray400"
+                    tools:ignore="SpeakableTextPresentCheck,TouchTargetSizeCheck" />
+
+                <ImageButton
+                    android:id="@+id/navigation_strip_right_image_button"
+                    android:layout_width="@dimen/manoeuvre_icon_image_size"
+                    android:layout_height="48dp"
+                    android:layout_alignParentEnd="true"
+                    android:layout_alignParentRight="true"
+                    android:layout_centerVertical="true"
+                    android:layout_gravity="center"
+                    android:background="@android:color/transparent"
+                    android:gravity="center"
+                    android:tint="@color/colorGray400"
+                    app:srcCompat="@drawable/ic_chevron_right_white_24dp"
+                    tools:ignore="SpeakableTextPresentCheck" />
+
+            </RelativeLayout>
+
+
+            <TextView
+                android:id="@+id/other_info_text_view"
+                android:layout_width="match_parent"
+                android:layout_height="100dp"
+                android:background="@color/colorGray400"
+                android:clickable="true"
+                android:focusable="true"
+                android:gravity="center"
+                android:text="@string/re_routing"
+                android:textColor="#ffffff"
+                android:textSize="30sp"
+                android:visibility="gone" />
+
+
+
+        </RelativeLayout>
+
+        <com.google.android.material.floatingactionbutton.FloatingActionButton
+            android:id="@+id/settings_button"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginLeft="16dp"
+            android:layout_marginTop="32dp"
+            android:tint="#28353D"
+            app:backgroundTint="@android:color/white"
+            app:borderWidth="0dp"
+            app:fabSize="mini"
+            app:layout_constraintLeft_toLeftOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/top_strip_layout"
+            app:srcCompat="@android:drawable/star_on"
+            tools:ignore="SpeakableTextPresentCheck" />
+
+        <ImageView
+            android:id="@+id/junction_view_image_view"
+            android:layout_width="280dp"
+            android:layout_height="200dp"
+            android:background="@color/app_blue"
+            android:visibility="invisible"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintLeft_toLeftOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/settings_button" />
+
+        <TextView
+            android:id="@+id/sound_text"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginLeft="16dp"
+            android:layout_marginRight="16dp"
+            android:background="@drawable/sound_chip_background"
+            app:elevation="2dp"
+            android:gravity="center_vertical"
+            android:paddingBottom="8dp"
+            android:paddingEnd="12dp"
+            android:paddingStart="12dp"
+            android:paddingTop="8dp"
+            android:text="@string/muted"
+            android:textColor="@color/app_blue"
+            android:textSize="14sp"
+            android:textStyle="bold"
+            android:visibility="invisible"
+            app:layout_constraintBottom_toBottomOf="@+id/sound_btn"
+            app:layout_constraintRight_toLeftOf="@+id/sound_btn"
+            app:layout_constraintTop_toTopOf="@+id/sound_btn" />
+
+        <com.google.android.material.floatingactionbutton.FloatingActionButton
+            android:id="@+id/sound_btn"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="32dp"
+            android:layout_marginRight="16dp"
+            android:tint="#28353D"
+            app:backgroundTint="@android:color/white"
+            app:borderWidth="0dp"
+            app:fabSize="mini"
+            app:layout_constraintRight_toRightOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/top_strip_layout"
+            app:srcCompat="@drawable/ic_sound_on"
+            tools:ignore="SpeakableTextPresentCheck" />
+
+        <com.google.android.material.floatingactionbutton.FloatingActionButton
+            android:visibility="gone"
+            android:id="@+id/reset_bounds_button"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginLeft="16dp"
+            android:layout_marginRight="16dp"
+            app:backgroundTint="@android:color/white"
+            app:fabSize="mini"
+            app:layout_constraintLeft_toLeftOf="parent"
+            app:layout_constraintTop_toTopOf="@+id/sound_btn"
+             />
+        <com.mappls.app.navigation.demo.views.RecenterButton
+            android:id="@+id/follow_button"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="130dp"
+            android:visibility="invisible"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintLeft_toLeftOf="parent"
+            tools:visibility="visible" />
+
+        <TextView
+            android:id="@+id/class_detail_text"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginLeft="16dp"
+            android:layout_marginRight="16dp"
+            android:layout_marginBottom="90dp"
+            android:background="@drawable/sound_chip_background"
+            app:elevation="2dp"
+            android:gravity="center_vertical"
+            android:paddingBottom="8dp"
+            android:paddingEnd="12dp"
+            android:paddingStart="12dp"
+            android:paddingTop="8dp"
+            android:text="This route does not contains any classes"
+            android:textColor="@color/app_blue"
+            android:textSize="14sp"
+            android:textStyle="bold"
+            android:visibility="invisible"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintLeft_toLeftOf="parent"
+            app:layout_constraintRight_toRightOf="parent"
+            />
+
+
+
+
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
+
+    <TextView
+            android:id="@+id/events_text"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_gravity="bottom"
+            android:background="@color/color_white"
+            android:minHeight="32dp"
+            android:padding="12dp"
+            android:gravity="center"
+            android:visibility="gone"
+            android:textColor="@color/app_blue"
+            />
+
+
+    <RelativeLayout
+        android:id="@+id/options_recycler_view_container"
+        app:layout_behavior="com.mappls.app.navigation.demo.views.LockableBottomSheetBehavior"
+        android:layout_width="match_parent"
+        android:layout_height="80dp"
+        android:background="@color/color_white"
+        android:paddingLeft="16dp"
+        android:paddingTop="8dp"
+        tools:ignore="RtlSymmetry">
+
+        <TextView
+            android:id="@+id/text_view_reach_eta"
+            android:layout_width="wrap_content"
+            android:layout_height="40dp"
+            android:layout_marginLeft="10dp"
+            android:gravity="center_vertical"
+            tools:text="4:20 PM ETA"
+            android:textColor="@color/darkGrey"
+            android:textSize="24sp"
+            android:textStyle="bold"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
+
+        <ImageView
+                android:id="@+id/image_route_overview"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:layout_toLeftOf="@+id/image_navigation_stop"
+                android:layout_marginRight="10dp"
+                android:layout_centerVertical="true"
+                android:src="@drawable/route_overview"
+                android:layout_marginLeft="12dp"
+                />
+
+        <ImageView
+            android:id="@+id/image_navigation_stop"
+            android:layout_width="35dp"
+            android:layout_height="35dp"
+            android:layout_alignParentRight="true"
+            android:layout_marginRight="20dp"
+            android:layout_centerVertical="true"
+            android:src="@drawable/ic_clear"
+            android:layout_marginLeft="12dp"
+            />
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="40dp"
+            android:layout_below="@+id/text_view_reach_eta"
+            android:orientation="horizontal">
+
+            <TextView
+                android:id="@+id/text_view_total_distance_left"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center_vertical"
+                android:layout_marginStart="8dp"
+                android:layout_marginLeft="8dp"
+                android:drawableLeft="@drawable/ic_play_arrow_grey_16dp"
+                tools:text="12.7 km"
+                android:textColor="@color/darkGrey"
+                />
+
+
+            <TextView
+                android:id="@+id/text_view_total_time_left"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center_vertical"
+                android:layout_marginStart="16dp"
+                android:layout_marginLeft="16dp"
+                android:drawableLeft="@drawable/ic_play_arrow_grey_16dp"
+                tools:text="23 min"
+                android:textColor="@color/darkGrey" />
+        </LinearLayout>
+    </RelativeLayout>
+
+    <TextView
+        android:id="@+id/warning_text_view"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_alignParentTop="true"
+        android:background="@color/red"
+        android:clickable="false"
+        android:ellipsize="end"
+        android:gravity="center"
+        android:maxLines="1"
+        android:orientation="horizontal"
+        android:padding="5dp"
+        android:textColor="@color/color_white"
+        android:visibility="gone" />
+</androidx.coordinatorlayout.widget.CoordinatorLayout>

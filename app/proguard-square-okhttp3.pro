@@ -1,0 +1,14 @@
+# OkHttp
+-keepattributes Signature
+-keepattributes *Annotation*
+-keep class okhttp3.** { *; }
+-keep interface okhttp3.** { *; }
+-dontwarn okhttp3.**
+-dontwarn okio.**
+ -dontwarn javax.annotation.Nullable
+ -dontwarn javax.annotation.CheckReturnValue
+ -dontwarn javax.annotation.ParametersAreNonnullByDefault
+ -dontwarn javax.annotation.concurrent.GuardedBy
+ -dontwarn javax.annotation.concurrent.Immutable
+ -dontwarn javax.annotation.CheckForNull
+ -dontwarn javax.annotation.concurrent.NotThreadSafe

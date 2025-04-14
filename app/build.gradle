@@ -1,0 +1,128 @@
+apply plugin: 'com.android.application'
+
+
+android {
+
+    applicationVariants.all { variant ->
+        variant.outputs.all {
+            def SEP = "-"
+            def project = "Navigation" //app name as our flavor is defined
+             //def flavor = variant.productFlavors[1].name
+            //environment as our flavor is defined ; not using right now as we postfix it in our version name
+            def buildType = variant.buildType.name //build type
+            def version = variant.versionName //version name
+            //def date = new Date();
+            //def formattedDate = date.format('ddMMyy_HHmm')
+
+            def newApkName = project + SEP + version + SEP + buildType + SEP + getDateTime() + ".apk"
+
+            outputFileName = newApkName
+        }
+    }
+
+    buildFeatures {
+        dataBinding = true
+    }
+    signingConfigs {
+        release {
+            storeFile file('navigation.jks')
+            storePassword 'mmi@123'
+            keyAlias = 'navigation'
+            keyPassword 'mmi@123'
+        }
+    }
+    compileSdkVersion 34
+    defaultConfig {
+        applicationId "com.mmi.navigation.ui.demo"
+        minSdkVersion 21
+        targetSdkVersion 34
+        versionCode 1
+        versionName "0.13.11"
+        multiDexEnabled true
+        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+        vectorDrawables.useSupportLibrary true
+        signingConfig signingConfigs.release
+        proguardFiles getDefaultProguardFile('proguard-android.txt'),'proguard-crashlytics-2.pro', 'proguard-google-play-services.pro', 'proguard-gson.pro',
+                'proguard-square-okhttp3.pro','proguard-square-retrofit2.pro','proguard-support-design.pro','proguard-support-v7-appcompat.pro',
+                'proguard-support-v7-cardview.pro','proguard-arch-components.pro'
+
+    }
+    lintOptions {
+        abortOnError false
+    }
+    buildTypes {
+        release {
+
+            minifyEnabled true
+
+        }
+
+        debug {
+            minifyEnabled false
+        }
+    }
+
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
+    }
+}
+
+dependencies {
+    implementation "org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version"
+
+    implementation 'androidx.appcompat:appcompat:1.6.1'
+
+    implementation 'androidx.core:core:1.8.0'
+    implementation 'com.google.android.material:material:1.6.1'
+    implementation 'androidx.constraintlayout:constraintlayout:2.1.4'
+
+    implementation 'androidx.room:room-runtime:2.6.0'
+    implementation 'androidx.legacy:legacy-support-v4:1.0.0'
+    annotationProcessor 'androidx.room:room-compiler:2.6.0'
+
+    implementation 'com.jakewharton.timber:timber:4.7.1'
+
+    implementation 'com.afollestad:sectioned-recyclerview:0.5.0'
+//    implementation 'pub.devrel:easypermissions:1.0.1'
+    implementation 'com.afollestad.material-dialogs:core:0.9.6.0'
+
+
+    implementation 'com.google.android.gms:play-services-location:21.0.1'
+
+    implementation 'androidx.lifecycle:lifecycle-extensions:2.2.0'
+
+
+    implementation 'com.github.bumptech.glide:glide:3.8.0'
+    implementation 'com.squareup.retrofit2:converter-scalars:2.6.1'
+
+    //Maps SDK
+    implementation 'com.mappls.sdk:mappls-android-sdk:8.2.2'
+    implementation 'com.mappls.sdk:directions-plugin:1.0.5'
+    implementation 'com.mappls.sdk:navigation-sdk:0.14.1'
+
+    implementation 'com.mappls.sdk:place-widget:2.2.1'
+    implementation 'com.mappls.sdk:navigation-camera:1.0.1'
+//    '*.aar',
+    implementation fileTree(dir: 'libs', include: [ '*.jar'], exclude: [])
+
+    implementation ('com.mappls.sdk:navigation-ui:1.2.0') {
+//        exclude group: 'com.mappls.sdk'
+    }
+    implementation ('com.mappls.sdk:direction-ui:2.1.2') {
+        exclude group: 'org.jetbrains.kotlin', module: 'kotlin-stdlib-jdk8'
+        exclude group: 'org.jetbrains.kotlin', module: 'kotlin-stdlib'
+    }
+//
+    implementation "androidx.car.app:app:1.4.0"
+    implementation "androidx.car.app:app-projected:1.4.0"
+}
+
+import java.text.DateFormat
+import java.text.SimpleDateFormat
+
+def getDateTime() {
+    DateFormat df = new SimpleDateFormat("dd_MMM_yyyy")
+    return df.format(new Date())
+}
