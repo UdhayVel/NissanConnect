@@ -7,6 +7,7 @@ import android.graphics.Paint;
 import android.graphics.PixelFormat;
 import android.graphics.PointF;
 import android.location.Location;
+import android.os.Handler;
 import android.os.Looper;
 import android.util.Log;
 import android.view.View;
@@ -60,11 +61,19 @@ import com.mappls.sdk.maps.location.modes.RenderMode;
 import com.mappls.sdk.maps.location.permissions.PermissionsManager;
 import com.mappls.sdk.navigation.MapplsNavigationHelper;
 import com.mappls.sdk.navigation.NavigationContext;
+import com.mappls.sdk.services.api.ApiResponse;
+import com.mappls.sdk.services.api.directions.DirectionsCriteria;
+import com.mappls.sdk.services.api.directions.MapplsDirectionManager;
+import com.mappls.sdk.services.api.directions.MapplsDirections;
+import com.mappls.sdk.services.api.directions.models.DirectionsResponse;
 import com.mappls.sdk.services.api.directions.models.DirectionsRoute;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 import timber.log.Timber;
 
@@ -92,6 +101,7 @@ public class CarMapContainer implements DefaultLifecycleObserver, LocationEngine
     public static RouteArrowPlugin routeArrowPlugin;
     public static BearingIconPlugin bearingIconPlugin;
     private LocationComponent locationPlugin;
+    private LatLng currentLatLng;
 
     private NavigationLocationEngine navigationLocationEngine;
 
@@ -314,8 +324,7 @@ public class CarMapContainer implements DefaultLifecycleObserver, LocationEngine
             try {
                 if (location == null || location.getLatitude() <= 0) return;
 
-                LatLng sourceLatLng = new LatLng(location.getLatitude(), location.getLongitude());
-                LatLng destLatLng = new LatLng(12.737430948595877, 80.00507178028703);
+                currentLatLng = new LatLng(location.getLatitude(), location.getLongitude());
 
                 if(!firstFix) {
                     firstFix = true;
@@ -374,6 +383,44 @@ public class CarMapContainer implements DefaultLifecycleObserver, LocationEngine
         if (latLng.getLatitude() > 0) {
             DirectionUtils.getReverseGeoCode(carContext, latLng);
         }
+
+        if(currentLatLng.getLatitude() > 0){
+            ExecutorService executor = Executors.newSingleThreadExecutor();
+            executor.execute(() -> {
+                try {
+                    MapplsDirections directions = MapplsDirections.builder()
+                            .origin(Point.fromLngLat(currentLatLng.getLongitude(), currentLatLng.getLatitude()))
+                            .steps(true)
+                            .resource(DirectionsCriteria.RESOURCE_ROUTE_ETA)
+                            .profile(DirectionsCriteria.PROFILE_DRIVING)
+                            .overview(DirectionsCriteria.OVERVIEW_FULL)
+                            .destination(Point.fromLngLat(latLng.getLongitude(), latLng.getLatitude()))
+                            .build();
+
+                    ApiResponse<DirectionsResponse> response = MapplsDirectionManager
+                            .newInstance(directions)
+                            .executeCall();
+
+                    if (response != null && response.getResponse() != null) {
+                        DirectionsResponse directionsResponse = response.getResponse();
+
+                        // Now post back to main thread to update UI or map
+                        new Handler(Looper.getMainLooper()).post(() -> {
+                            Log.e("DirectionsResponse:: ", directionsResponse.toString());
+                            // TODO: plot polyline or update UI here
+                        });
+
+                    } else {
+                        Log.e("DirectionsNull ", "Response was null or empty.");
+                    }
+
+                } catch (IOException e) {
+                    Log.e("DirectionsCatch", "Error fetching directions", e);
+                }
+            });
+
+        }
+
     }
 
 
