@@ -32,15 +32,15 @@ public class LocationListScreen extends Screen {
     @Override
     public Template onGetTemplate() {
         List<LocationList> locationLists = new ArrayList<>();
-        locationLists.add(new LocationList("Renault Nissan", new LatLng(12.737430948595877, 80.00507178028703)));
-        locationLists.add(new LocationList("Infosys", new LatLng(12.733380697239431, 80.0092495398074)));
+        locationLists.add(new LocationList("Renault Nissan", "Dist. 33.4 km", new LatLng(12.737430948595877, 80.00507178028703)));
+        locationLists.add(new LocationList("Infosys", "Dist. 34.4 km", new LatLng(12.733380697239431, 80.0092495398074)));
 
         ItemList.Builder itemListBuilder = new ItemList.Builder();
 
         for (LocationList station : locationLists) {
             Row row = new Row.Builder()
                     .setTitle(station.getName())
-                    .addText(station.getLatLng().toString())
+                    .addText(station.getDistance())
                     .setImage(new CarIcon.Builder(
                             IconCompat.createWithResource(getCarContext(), R.drawable.ic_location_on_black_24dp))
                             .build(), Row.IMAGE_TYPE_ICON)

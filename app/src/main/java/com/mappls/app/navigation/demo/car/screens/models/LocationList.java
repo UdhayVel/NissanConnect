@@ -6,10 +6,20 @@ import com.mappls.sdk.maps.geometry.LatLng;
 
 public class LocationList{
     String name;
+    String distance;
     LatLng latLng;
-    public LocationList(@NonNull String name, @NonNull LatLng latLng){
+    public LocationList(@NonNull String name, @NonNull String distance, @NonNull LatLng latLng){
         this.latLng = latLng;
+        this.distance = distance;
         this.name = name;
+    }
+
+    public String getDistance() {
+        return distance;
+    }
+
+    public void setDistance(String distance) {
+        this.distance = distance;
     }
 
     public String getName() {

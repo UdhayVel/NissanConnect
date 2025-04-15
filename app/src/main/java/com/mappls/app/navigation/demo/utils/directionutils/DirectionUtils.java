@@ -6,6 +6,7 @@ import android.util.Log;
 import androidx.car.app.CarContext;
 import androidx.car.app.CarToast;
 
+import com.mappls.app.navigation.demo.NavApplication;
 import com.mappls.app.navigation.demo.R;
 import com.mappls.sdk.maps.MapplsMap;
 import com.mappls.sdk.maps.geometry.LatLng;
@@ -32,7 +33,7 @@ public class DirectionUtils {
             if (location != null) {
                 if (fromLocation != null) {
 //                    openDirectionWidget(eLocation);
-                }else {
+                } else {
                     CarToast.makeText(context, R.string.current_location_not_available, CarToast.LENGTH_SHORT).show();
                     getReverseGeoCode(context, new LatLng(location.getLatitude(), location.getLongitude()));
                 }
@@ -43,7 +44,6 @@ public class DirectionUtils {
             Timber.e(e);
         }
     }
-
 
 
     public static void getReverseGeoCode(CarContext carContext, LatLng latLng) {
@@ -65,7 +65,10 @@ public class DirectionUtils {
                     eLocation.placeName = place.getFormattedAddress();
 
                     eLocation.placeAddress = carContext.getString(R.string.point_on_map);
-//                    app.setELocation(eLocation);
+                    Log.e("LatLng onSuccess:: ", eLocation.entryLatitude + "");
+                    NavApplication app = ((NavApplication) carContext.getApplicationContext());
+                    app.setELocation(eLocation);
+                    Log.e("ELocation:: ", app.getELocation().entryLatitude + "");
                 }
             }
 

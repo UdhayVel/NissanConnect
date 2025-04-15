@@ -3,6 +3,7 @@ package com.mappls.app.navigation.demo.car.surface;
 import android.Manifest;
 import android.animation.Animator;
 import android.animation.ValueAnimator;
+import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.PixelFormat;
 import android.graphics.PointF;
@@ -24,11 +25,14 @@ import androidx.core.view.ViewCompat;
 import androidx.lifecycle.DefaultLifecycleObserver;
 import androidx.lifecycle.Lifecycle;
 import androidx.lifecycle.LifecycleOwner;
+import androidx.lifecycle.LiveData;
+import androidx.lifecycle.MutableLiveData;
 
 import com.mappls.app.navigation.demo.NavApplication;
 import com.mappls.app.navigation.demo.R;
 import com.mappls.app.navigation.demo.car.extensions.CarContextUtils;
 import com.mappls.app.navigation.demo.car.extensions.ThreadUtils;
+import com.mappls.app.navigation.demo.car.utils.PolylineDecoder;
 import com.mappls.app.navigation.demo.maps.plugins.BearingIconPlugin;
 import com.mappls.app.navigation.demo.maps.plugins.DirectionPolylinePlugin;
 import com.mappls.app.navigation.demo.maps.plugins.RouteArrowPlugin;
@@ -45,6 +49,7 @@ import com.mappls.sdk.maps.Style;
 import com.mappls.sdk.maps.annotations.Marker;
 import com.mappls.sdk.maps.annotations.MarkerOptions;
 import com.mappls.sdk.maps.annotations.Polyline;
+import com.mappls.sdk.maps.annotations.PolylineOptions;
 import com.mappls.sdk.maps.camera.CameraUpdateFactory;
 import com.mappls.sdk.maps.constants.MapplsConstants;
 import com.mappls.sdk.maps.geometry.LatLng;
@@ -105,6 +110,10 @@ public class CarMapContainer implements DefaultLifecycleObserver, LocationEngine
 
     private NavigationLocationEngine navigationLocationEngine;
 
+
+    private final MutableLiveData<Boolean> liveDataCarScreenUIObserver = new MutableLiveData<>();
+
+
     public CarMapContainer(CarContext carContext, Lifecycle lifecycle) {
         this.carContext = carContext;
         lifecycle.addObserver(this);
@@ -160,6 +169,8 @@ public class CarMapContainer implements DefaultLifecycleObserver, LocationEngine
                             mapplsMap.addOnMapLongClickListener(CarMapContainer.this);
                             setCompassDrawable();
 
+                            setupCarUI(mapplsMap != null);
+
                         } catch (SecurityException e) {
                             Log.e(LOG_TAG, "Location permission not granted", e);
                         }
@@ -172,6 +183,13 @@ public class CarMapContainer implements DefaultLifecycleObserver, LocationEngine
                 }
             });
         });
+    }
+
+    private void setupCarUI(boolean isMapAvail) {
+        liveDataCarScreenUIObserver.postValue(isMapAvail);
+    }
+    public LiveData<Boolean> getCarsUIUpdate() {
+        return liveDataCarScreenUIObserver;
     }
 
     @Override
@@ -193,8 +211,6 @@ public class CarMapContainer implements DefaultLifecycleObserver, LocationEngine
     public void onStop(@NonNull LifecycleOwner owner) {
         DefaultLifecycleObserver.super.onStop(owner);
     }
-
-
 
 
     public void setCompassDrawable() {
@@ -326,9 +342,9 @@ public class CarMapContainer implements DefaultLifecycleObserver, LocationEngine
 
                 currentLatLng = new LatLng(location.getLatitude(), location.getLongitude());
 
-                if(!firstFix) {
+                if (!firstFix) {
                     firstFix = true;
-                    mapplsMap.animateCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(location), 14), 500);
+                    mapplsMap.animateCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(location), 16), 500);
                 }
 //                if (routePolyline != null) {
 //                    mapplsMap.removePolyline(routePolyline);
@@ -373,9 +389,12 @@ public class CarMapContainer implements DefaultLifecycleObserver, LocationEngine
         }
     }
 
-    public void addMarker(LatLng latLng){
+    public void addMarker(LatLng latLng) {
 //        LatLng selectedLocationLatLng = new LatLng(eLocation.latitude, eLocation.longitude);
-        if(secondaryMarker != null){
+        if(currentLatLng == null){
+            return;
+        }
+        if (secondaryMarker != null) {
             mapplsMap.removeMarker(secondaryMarker);
         }
         secondaryMarker = mapplsMap.addMarker(new MarkerOptions().position(latLng));
@@ -384,10 +403,30 @@ public class CarMapContainer implements DefaultLifecycleObserver, LocationEngine
             DirectionUtils.getReverseGeoCode(carContext, latLng);
         }
 
-        if(currentLatLng.getLatitude() > 0){
+        if (currentLatLng.getLatitude() > 0) {
             ExecutorService executor = Executors.newSingleThreadExecutor();
             executor.execute(() -> {
                 try {
+
+//                    List<String> annotations = new ArrayList<String>();
+//                    annotations.add(DirectionsCriteria.ANNOTATION_CONGESTION);
+//                    annotations.add(DirectionsCriteria.ANNOTATION_NODES);
+//                    annotations.add(DirectionsCriteria.ANNOTATION_DURATION);
+//                    annotations.add(DirectionsCriteria.ANNOTATION_BASE_DURATION);
+//                    annotations.add(DirectionsCriteria.ANNOTATION_SPEED_LIMIT);
+//                    DirectionOptions.Builder optionsBuilder = DirectionOptions.builder();
+//                    if(eLocation.longitude != null && eLocation.latitude != null) {
+//                        optionsBuilder.destination(DirectionPoint.setDirection(Point.fromLngLat(eLocation.longitude, eLocation.latitude), eLocation.placeName, eLocation.placeAddress));
+//                    } else {
+//                        optionsBuilder.destination(DirectionPoint.setDirection(eLocation.mapplsPin, eLocation.placeName, eLocation.placeAddress));
+//                    }
+//                    optionsBuilder.annotation(annotations);
+//                    optionsBuilder.showAlternative(true);
+//                    optionsBuilder.resource(DirectionsCriteria.RESOURCE_ROUTE_ETA)
+//                            .steps(true);
+//                    optionsBuilder.showDefaultMap(false);
+
+
                     MapplsDirections directions = MapplsDirections.builder()
                             .origin(Point.fromLngLat(currentLatLng.getLongitude(), currentLatLng.getLatitude()))
                             .steps(true)
@@ -407,6 +446,23 @@ public class CarMapContainer implements DefaultLifecycleObserver, LocationEngine
                         // Now post back to main thread to update UI or map
                         new Handler(Looper.getMainLooper()).post(() -> {
                             Log.e("DirectionsResponse:: ", directionsResponse.toString());
+
+                            if (!directionsResponse.routes().isEmpty()) {
+                                DirectionsRoute route = directionsResponse.routes().get(0);
+                                // Decode the polyline
+                                List<LatLng> latLNGs = PolylineDecoder.decodePolyline(route.geometry());
+                                Log.e("routes:: ", latLNGs.toString());
+
+                                if(routePolyline != null) {
+                                    mapplsMap.removePolyline(routePolyline);
+                                }
+                                routePolyline = mapplsMap.addPolyline(new PolylineOptions().addAll(latLNGs).color(Color.parseColor("#3bb2d0")).width(8));
+                                if (latLNGs.size() > 1) {
+                                    LatLngBounds bounds = new LatLngBounds.Builder().includes(latLNGs).build();
+
+                                    mapplsMap.animateCamera(CameraUpdateFactory.newLatLngBounds(bounds, 30));
+                                }
+                            }
                             // TODO: plot polyline or update UI here
                         });
 
@@ -425,13 +481,13 @@ public class CarMapContainer implements DefaultLifecycleObserver, LocationEngine
 
 
     private void drawPolyLine() {
-        Log.e("carContext:: ", carContext+"");
+        Log.e("carContext:: ", carContext + "");
         if (carContext == null)
             return;
         ArrayList<Point> points = new ArrayList<>();
         String locations = MapplsNavigationHelper.getInstance().getCurrentRoute().geometry();
 
-        Log.e("locationnsss:: ", ""+MapplsNavigationHelper.getInstance().getCurrentRoute().geometry());
+        Log.e("locationnsss:: ", "" + MapplsNavigationHelper.getInstance().getCurrentRoute().geometry());
         if (directionPolylinePlugin != null) {
             LatLng latLng = null;
             if (app.getELocation() != null && app.getELocation().latitude != null && app.getELocation().longitude != null) {
@@ -468,5 +524,10 @@ public class CarMapContainer implements DefaultLifecycleObserver, LocationEngine
         CarToast.makeText(carContext, "Long clicked", CarToast.LENGTH_SHORT).show();
         addMarker(latLng);
         return false;
+    }
+
+    public MapplsMap getMapplsMap() {
+
+        return mapplsMap;
     }
 }

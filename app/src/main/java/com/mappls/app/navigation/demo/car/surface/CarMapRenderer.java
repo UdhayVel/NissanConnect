@@ -8,6 +8,7 @@ import android.graphics.Point;
 import android.graphics.Rect;
 import android.graphics.Typeface;
 import android.hardware.display.VirtualDisplay;
+import android.location.Location;
 import android.os.Build;
 import android.os.Handler;
 import android.os.Looper;
@@ -31,15 +32,18 @@ import com.mappls.app.navigation.demo.car.extensions.ThreadUtils;
 import com.mappls.app.navigation.demo.car.screens.interfaceclasses.SelectLocationCallBack;
 import com.mappls.app.navigation.demo.car.screens.models.LocationList;
 import com.mappls.sdk.maps.MapView;
+import com.mappls.sdk.maps.MapplsMap;
 import com.mappls.sdk.maps.camera.CameraUpdate;
 import com.mappls.sdk.maps.camera.CameraUpdateFactory;
+import com.mappls.sdk.maps.geometry.LatLng;
+import com.mappls.sdk.navigation.NavigationContext;
 
 public class CarMapRenderer implements SurfaceCallback, DefaultLifecycleObserver, ICarMapRenderer, SelectLocationCallBack {
 
     private static final String LOG_TAG = "CarMapRenderer";
 
     private final CarContext carContext;
-    private final CarMapContainer mapContainer;
+    public static CarMapContainer mapContainer;
 
     private VirtualDisplay virtualDisplay;
     private Presentation presentation;
@@ -64,6 +68,13 @@ public class CarMapRenderer implements SurfaceCallback, DefaultLifecycleObserver
         this.osmPaint.setTypeface(Typeface.DEFAULT);
 
         serviceLifecycle.addObserver(this);
+    }
+
+    public MapplsMap getMapplsMap(){
+        if(mapContainer == null){
+            return null;
+        }
+        return mapContainer.getMapplsMap();
     }
 
     @Override
@@ -222,5 +233,12 @@ public class CarMapRenderer implements SurfaceCallback, DefaultLifecycleObserver
     public void setSelectedLocation(LocationList location) {
         Log.v("locationCallBack:: ", "setSelectedLocation " + location.getLatLng());
         mapContainer.addMarker(location.getLatLng());
+    }
+
+    public void getCurrentLocation() {
+        if(NavigationContext.getNavigationContext().getCurrentLocation() != null){
+            Location loc = NavigationContext.getNavigationContext().getCurrentLocation();
+            CarMapContainer.mapplsMap.animateCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(loc), 16), 500);
+        }
     }
 }
