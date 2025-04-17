@@ -238,7 +238,9 @@ public class HomeFragment extends Fragment {
             }
 
             @Override
-            public void onStartNavigation(DirectionPoint directionPoint, DirectionPoint directionPoint1, List<DirectionPoint> list, DirectionsResponse directionsResponse, int i) {
+            public void onStartNavigation(DirectionPoint directionPoint, DirectionPoint directionPoint1,
+                                          List<DirectionPoint> list, DirectionsResponse directionsResponse,
+                                          int i) {
                 currentLocationPoint = directionPoint;
                 viewModel.setSelectedIndex(i);
                 viewModel.setTrip(directionsResponse);

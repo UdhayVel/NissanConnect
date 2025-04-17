@@ -68,7 +68,7 @@ public class DirectionUtils {
                     Log.e("LatLng onSuccess:: ", eLocation.entryLatitude + "");
                     NavApplication app = ((NavApplication) carContext.getApplicationContext());
                     app.setELocation(eLocation);
-                    Log.e("ELocation:: ", app.getELocation().entryLatitude + "");
+                    Log.e("ELocationGeo:: ", app.getELocation() + "");
                 }
             }
 
