@@ -61,6 +61,7 @@
             android:value="7" />
 
         <activity android:name=".car.screens.PhonePermissionActivity" />
+        <activity android:name=".car.screens.LocationSharingActivity" />
 
         <service
             android:name=".car.CarMapService"

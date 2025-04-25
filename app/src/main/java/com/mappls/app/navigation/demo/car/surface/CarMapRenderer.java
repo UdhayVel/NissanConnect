@@ -1,7 +1,6 @@
 package com.mappls.app.navigation.demo.car.surface;
 
 import android.app.Presentation;
-import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Paint;
@@ -17,23 +16,18 @@ import android.util.Log;
 import android.view.Surface;
 import android.view.TextureView;
 import android.view.View;
-import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.RequiresApi;
 import androidx.car.app.AppManager;
 import androidx.car.app.CarContext;
-import androidx.car.app.CarToast;
 import androidx.car.app.SurfaceCallback;
 import androidx.car.app.SurfaceContainer;
 import androidx.lifecycle.DefaultLifecycleObserver;
 import androidx.lifecycle.Lifecycle;
 import androidx.lifecycle.LifecycleOwner;
 
-import com.mappls.app.navigation.demo.HomeActivity;
-import com.mappls.app.navigation.demo.NavigationActivity;
 import com.mappls.app.navigation.demo.R;
-import com.mappls.app.navigation.demo.car.extensions.CarContextUtils;
 import com.mappls.app.navigation.demo.car.extensions.ThreadUtils;
 import com.mappls.app.navigation.demo.car.screens.interfaceclasses.SelectLocationCallBack;
 import com.mappls.app.navigation.demo.car.screens.models.LocationList;
@@ -43,22 +37,9 @@ import com.mappls.sdk.maps.MapplsMap;
 import com.mappls.sdk.maps.camera.CameraUpdate;
 import com.mappls.sdk.maps.camera.CameraUpdateFactory;
 import com.mappls.sdk.maps.geometry.LatLng;
-import com.mappls.sdk.navigation.MapplsNavigationHelper;
 import com.mappls.sdk.navigation.NavLocation;
 import com.mappls.sdk.navigation.NavigationContext;
-import com.mappls.sdk.navigation.data.WayPoint;
-import com.mappls.sdk.navigation.model.NavigationResponse;
-import com.mappls.sdk.navigation.ui.navigation.MapplsNavigationViewHelper;
-import com.mappls.sdk.navigation.util.ErrorType;
 import com.mappls.sdk.services.api.autosuggest.model.ELocation;
-import com.mappls.sdk.services.api.directions.models.DirectionsResponse;
-
-import java.util.ArrayList;
-import java.util.List;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-
-import timber.log.Timber;
 
 public class CarMapRenderer implements SurfaceCallback, DefaultLifecycleObserver, ICarMapRenderer, SelectLocationCallBack {
 
@@ -254,7 +235,19 @@ public class CarMapRenderer implements SurfaceCallback, DefaultLifecycleObserver
     @Override
     public void setSelectedLocation(LocationList location) {
         Log.v("locationCallBack:: ", "setSelectedLocation " + location.getLatLng());
-        mapContainer.addMarker(location.getLatLng());
+
+        DirectionPoint destinationDirectionPoint =
+                DirectionPoint.setDirection(com.mappls.sdk.geojson.Point.fromLngLat(
+                        location.getLatLng().getLongitude(), location.getLatLng().getLatitude()), "", "");
+
+        ELocation eLocationDestination = new ELocation();
+        eLocationDestination.placeName = destinationDirectionPoint.getPlaceName();
+        eLocationDestination.placeAddress = destinationDirectionPoint.getPlaceAddress();
+        eLocationDestination.latitude = destinationDirectionPoint.getLatitude();
+        eLocationDestination.longitude = destinationDirectionPoint.getLongitude();
+        eLocationDestination.mapplsPin = destinationDirectionPoint.getMapplsPin();
+
+        mapContainer.addMarker(eLocationDestination);
     }
 
     public void getCurrentLocation() {
@@ -274,5 +267,13 @@ public class CarMapRenderer implements SurfaceCallback, DefaultLifecycleObserver
 
     public void stopNavigationCars() {
        mapContainer.stopNavigtion();
+    }
+
+    public void recenter() {
+        mapContainer.followMe(true);
+    }
+
+    public void shareLocation() {
+        mapContainer.shareLocation();
     }
 }

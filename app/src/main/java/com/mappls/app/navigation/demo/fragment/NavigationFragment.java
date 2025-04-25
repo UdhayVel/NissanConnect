@@ -1313,7 +1313,7 @@ public class NavigationFragment extends Fragment implements
             if (routeClasses.ferry() != null && routeClasses.ferry() == 1) {
                 classesList.add("Ferry");
             }
-            if (routeClasses.ferry() != null && routeClasses.ferry() == 1) {
+            if (routeClasses.tunnel() != null && routeClasses.tunnel() == 1) {
                 classesList.add("Tunnel");
             }
             if (routeClasses.motorway() != null && routeClasses.motorway() == 1) {

@@ -1,6 +1,5 @@
 package com.mappls.app.navigation.demo.car.screens;
 
-import android.os.Build;
 import android.text.SpannableString;
 
 import androidx.annotation.NonNull;
@@ -17,14 +16,10 @@ import androidx.car.app.model.DistanceSpan;
 import androidx.car.app.model.ItemList;
 import androidx.car.app.model.ListTemplate;
 import androidx.car.app.model.MessageTemplate;
-import androidx.car.app.model.Pane;
-import androidx.car.app.model.PaneTemplate;
 import androidx.car.app.model.Row;
 import androidx.car.app.model.Template;
 import androidx.car.app.navigation.model.MapController;
 import androidx.car.app.navigation.model.MapWithContentTemplate;
-import androidx.car.app.navigation.model.NavigationTemplate;
-import androidx.car.app.navigation.model.TravelEstimate;
 import androidx.core.graphics.drawable.IconCompat;
 
 import com.mappls.app.navigation.demo.R;
@@ -36,7 +31,6 @@ import com.mappls.app.navigation.demo.car.screens.models.UiState;
 import com.mappls.app.navigation.demo.car.surface.CarMapRenderer;
 import com.mappls.sdk.maps.geometry.LatLng;
 
-import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -71,9 +65,9 @@ public class CarMapScreen extends Screen implements SelectLocationCallBack {
         /// Fav Lists of Locations
         List<LocationList> locationLists = new ArrayList<>();
         locationLists.add(new LocationList("Mahindra Research Valley", "Dist. 3.4 km",
-                new LatLng(12.719721329778205, 80.01362353482807)));
-        locationLists.add(new LocationList("Infosys Limited", "Dist. 1 km",
-                new LatLng(12.73342255713208, 80.00914225145132)));
+                new LatLng(12.719272539838009, 80.01369888214302)));
+        locationLists.add(new LocationList("Renault Nissan", "Dist. 1 km",
+                new LatLng(12.73747702155609, 80.00497228905022)));
 
         /// Text Span for Lists
         Distance distance = Distance.create(33400, Distance.UNIT_METERS);
