@@ -65,9 +65,12 @@ public class CarMapScreen extends Screen implements SelectLocationCallBack {
         /// Fav Lists of Locations
         List<LocationList> locationLists = new ArrayList<>();
         locationLists.add(new LocationList("Mahindra Research Valley", "Dist. 3.4 km",
-                new LatLng(12.719272539838009, 80.01369888214302)));
+//                new LatLng(12.719272539838009, 80.01369888214302)));
+                new LatLng(9.906418870689125, 78.09861955921663)));
         locationLists.add(new LocationList("Renault Nissan", "Dist. 1 km",
-                new LatLng(12.73747702155609, 80.00497228905022)));
+                new LatLng(12.736336842735977, 80.00724745018937)));
+        locationLists.add(new LocationList("Home", "Dist. 409 km",
+                new LatLng(9.906540252550204, 78.09575245798462)));
 
         /// Text Span for Lists
         Distance distance = Distance.create(33400, Distance.UNIT_METERS);

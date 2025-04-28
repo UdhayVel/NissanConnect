@@ -1,6 +1,5 @@
 package com.mappls.app.navigation.demo.car.screens;
 
-import static com.mappls.app.navigation.demo.utils.utils.convertIntoHrs;
 import static com.mappls.app.navigation.demo.utils.utils.convertIntoKM;
 import static com.mappls.app.navigation.demo.utils.utils.getDrawableResId;
 
@@ -34,9 +33,9 @@ public class CarNavigationScreen extends Screen {
 
     CarContext carContext;
     CarMapRenderer carMapRenderer;
-    double distance = 0.0;
+    double distanceInKM = 0.0;
     String eta = "";
-    int remainingDuration = 0;
+    int remainingDurationInSec = 0;
     String nextStep = "";
     int iconId = 0;
 
@@ -47,11 +46,14 @@ public class CarNavigationScreen extends Screen {
 
         CarMapRenderer.mapContainer.getLiveDataAdviseInfo().observe(this, adviseInfo -> {
             eta = adviseInfo.getEta();
-            distance = convertIntoKM(adviseInfo.getLeftDistance());
-            remainingDuration = convertIntoHrs(adviseInfo.getLeftTime());
-            nextStep = adviseInfo.getNextInstructionText();
+            distanceInKM = convertIntoKM(adviseInfo.getLeftDistance());
+            remainingDurationInSec = adviseInfo.getLeftTime();
+            nextStep = adviseInfo.getText();
             iconId = getDrawableResId((int) adviseInfo.getManeuverID(), carContext);
 
+            Timber.tag("text").d(adviseInfo.getText() + "");
+            Timber.tag("shortText").d(adviseInfo.getShortText() + "");
+            Timber.tag("nextInsInfo").d(adviseInfo.getNextInstructionInfo() + "");
             Timber.tag("etaInSec").d(adviseInfo.getEtaInSecond() + "");
             Timber.tag("disFromRoute").d(adviseInfo.getDistanceFromRoute() + "");
             Timber.tag("info").d(adviseInfo.getInfo() + "");
@@ -61,7 +63,11 @@ public class CarNavigationScreen extends Screen {
             Timber.tag("nextIns").d(adviseInfo.getNextInstructionText() + "");
             Timber.tag("nextDis").d(adviseInfo.getDistanceToNextAdvise() + "");
             Timber.tag("leftDis").d(adviseInfo.getLeftDistance() + "");
-            Timber.tag("navigationScreenAI").d(eta + " / " + distance + " / " + remainingDuration + " / " + iconId);
+            Timber.tag("navigationScreenAI").d(eta + " / " + distanceInKM + " / " + remainingDurationInSec + " / " + iconId);
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                Timber.tag("convertSecsIntoHr::").d(Duration.ofSeconds(adviseInfo.getLeftTime())+
+                        "");
+            }
             invalidate();
         });
     }
@@ -72,7 +78,7 @@ public class CarNavigationScreen extends Screen {
 
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            Timber.tag("ZonedTime").d("%s", ZonedDateTime.now().plusMinutes(remainingDuration));
+            Timber.tag("ZonedTime").d("%s", ZonedDateTime.now().plusMinutes(remainingDurationInSec));
         }
 
         /// Travel Estimation Info
@@ -81,15 +87,14 @@ public class CarNavigationScreen extends Screen {
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             travelEstimate = new TravelEstimate.Builder(
-                    Distance.create(distance, Distance.UNIT_KILOMETERS),
-                    ZonedDateTime.now().plusMinutes(remainingDuration)
+                    Distance.create(distanceInKM, Distance.UNIT_KILOMETERS),
+                    ZonedDateTime.now().plusSeconds(remainingDurationInSec)
             );
-            travelEstimate.setTripText(new CarText.Builder(nextStep).build());
+            travelEstimate.setTripText(new CarText.Builder(nextStep == null? "":nextStep).build());
                 travelEstimate.setTripIcon(new CarIcon.Builder(IconCompat
                         .createWithResource(carContext, iconId == 0?
-                                R.drawable.ic_cancel_black_24dp : iconId)
-                        .setTint(whiteColor)).build());
-            travelEstimate.setRemainingTime(Duration.ofHours(remainingDuration));
+                                R.drawable.ic_cancel_black_24dp : iconId)).setTint(CarColor.createCustom(whiteColor, whiteColor)).build());
+            travelEstimate.setRemainingTime(Duration.ofSeconds(remainingDurationInSec));
             travelEstimate.setRemainingTimeColor(CarColor.GREEN);                    // Optional
         }
 
