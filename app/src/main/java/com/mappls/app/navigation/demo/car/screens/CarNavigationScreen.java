@@ -1,5 +1,6 @@
 package com.mappls.app.navigation.demo.car.screens;
 
+import static com.mappls.app.navigation.demo.utils.utils.checkUnit;
 import static com.mappls.app.navigation.demo.utils.utils.convertIntoKM;
 import static com.mappls.app.navigation.demo.utils.utils.getDrawableResId;
 
@@ -12,10 +13,12 @@ import androidx.car.app.model.Action;
 import androidx.car.app.model.ActionStrip;
 import androidx.car.app.model.CarColor;
 import androidx.car.app.model.CarIcon;
-import androidx.car.app.model.CarText;
 import androidx.car.app.model.Distance;
 import androidx.car.app.model.Template;
+import androidx.car.app.navigation.model.Maneuver;
 import androidx.car.app.navigation.model.NavigationTemplate;
+import androidx.car.app.navigation.model.RoutingInfo;
+import androidx.car.app.navigation.model.Step;
 import androidx.car.app.navigation.model.TravelEstimate;
 import androidx.core.content.ContextCompat;
 import androidx.core.graphics.drawable.IconCompat;
@@ -34,19 +37,24 @@ public class CarNavigationScreen extends Screen {
     CarContext carContext;
     CarMapRenderer carMapRenderer;
     double distanceInKM = 0.0;
+    double nextDist = 0.0;
     String eta = "";
     int remainingDurationInSec = 0;
     String nextStep = "";
     int iconId = 0;
+    int whiteColor;
 
     protected CarNavigationScreen(@NonNull CarContext carContext, @NonNull CarMapRenderer carMapRenderer) {
         super(carContext);
         this.carContext = carContext;
         this.carMapRenderer = carMapRenderer;
 
+        whiteColor = ContextCompat.getColor(carContext, R.color.white);
+
         CarMapRenderer.mapContainer.getLiveDataAdviseInfo().observe(this, adviseInfo -> {
             eta = adviseInfo.getEta();
             distanceInKM = convertIntoKM(adviseInfo.getLeftDistance());
+            nextDist = adviseInfo.getDistanceToNextAdvise();
             remainingDurationInSec = adviseInfo.getLeftTime();
             nextStep = adviseInfo.getText();
             iconId = getDrawableResId((int) adviseInfo.getManeuverID(), carContext);
@@ -65,7 +73,7 @@ public class CarNavigationScreen extends Screen {
             Timber.tag("leftDis").d(adviseInfo.getLeftDistance() + "");
             Timber.tag("navigationScreenAI").d(eta + " / " + distanceInKM + " / " + remainingDurationInSec + " / " + iconId);
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                Timber.tag("convertSecsIntoHr::").d(Duration.ofSeconds(adviseInfo.getLeftTime())+
+                Timber.tag("convertSecsIntoHr::").d(Duration.ofSeconds(adviseInfo.getLeftTime()) +
                         "");
             }
             invalidate();
@@ -81,21 +89,41 @@ public class CarNavigationScreen extends Screen {
             Timber.tag("ZonedTime").d("%s", ZonedDateTime.now().plusMinutes(remainingDurationInSec));
         }
 
+        Maneuver currentManeuver = new Maneuver.Builder(Maneuver.TYPE_KEEP_LEFT)
+                .setIcon(new CarIcon.Builder(IconCompat
+                        .createWithResource(carContext, iconId == 0 ?
+                                R.drawable.ic_cancel_black_24dp : iconId)).setTint(CarColor.createCustom(whiteColor, whiteColor)).build())  // optional
+                .build();
+//
+//        Maneuver nextManeuver = new Maneuver.Builder(iconId == 0 ?
+//                Maneuver.TYPE_UNKNOWN : iconId)
+//                .build();
+
+        Step currentStep = new Step.Builder(nextStep)
+                .setManeuver(currentManeuver)
+                .setRoad(nextStep == null ? "" : nextStep)
+                .build();
+
+
+        RoutingInfo.Builder routingInfo =
+                new RoutingInfo.Builder().setCurrentStep(currentStep,
+                        Distance.create(nextDist, Distance.UNIT_METERS));
+
         /// Travel Estimation Info
         TravelEstimate.Builder travelEstimate = null;
-        int whiteColor = ContextCompat.getColor(carContext, R.color.white);
+
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             travelEstimate = new TravelEstimate.Builder(
-                    Distance.create(distanceInKM, Distance.UNIT_KILOMETERS),
+                    Distance.create(distanceInKM, checkUnit(distanceInKM) ? Distance.UNIT_METERS : Distance.UNIT_KILOMETERS),
                     ZonedDateTime.now().plusSeconds(remainingDurationInSec)
             );
-            travelEstimate.setTripText(new CarText.Builder(nextStep == null? "":nextStep).build());
-                travelEstimate.setTripIcon(new CarIcon.Builder(IconCompat
-                        .createWithResource(carContext, iconId == 0?
-                                R.drawable.ic_cancel_black_24dp : iconId)).setTint(CarColor.createCustom(whiteColor, whiteColor)).build());
+//            travelEstimate.setTripText(new CarText.Builder(nextStep == null ? "" : nextStep).build());
+            travelEstimate.setTripIcon(new CarIcon.Builder(IconCompat
+                    .createWithResource(carContext, R.drawable.ic_cancel_black_24dp).setTint(whiteColor)).build());
             travelEstimate.setRemainingTime(Duration.ofSeconds(remainingDurationInSec));
-            travelEstimate.setRemainingTimeColor(CarColor.GREEN);                    // Optional
+            travelEstimate.setRemainingTimeColor(CarColor.GREEN);
+            travelEstimate.setRemainingDistanceColor(CarColor.RED);
         }
 
         /// Navigation Template
@@ -104,13 +132,13 @@ public class CarNavigationScreen extends Screen {
 
         });
         navigationTemplate.setActionStrip(buildActionStrip().build());
+        navigationTemplate.setNavigationInfo(routingInfo.build());
         if (travelEstimate != null) {
             navigationTemplate.setDestinationTravelEstimate(travelEstimate.build());
         }
         if (carContext.getCarAppApiLevel() >= 2) {
             navigationTemplate.setMapActionStrip(buildMapActionStrip(carMapRenderer).build());
         }
-
 
         return navigationTemplate.build();
     }

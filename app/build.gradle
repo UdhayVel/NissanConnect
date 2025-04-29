@@ -100,7 +100,7 @@ dependencies {
     //Maps SDK
     implementation 'com.mappls.sdk:mappls-android-sdk:8.2.2'
     implementation 'com.mappls.sdk:directions-plugin:1.0.5'
-    implementation 'com.mappls.sdk:navigation-sdk:0.14.1'
+    implementation 'com.mappls.sdk:navigation-sdk:0.14.2'
 
     implementation 'com.mappls.sdk:place-widget:2.2.1'
     implementation 'com.mappls.sdk:navigation-camera:1.0.1'

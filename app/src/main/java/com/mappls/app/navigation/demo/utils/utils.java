@@ -14,6 +14,11 @@ public class utils {
         return value;
     }
 
+    public static boolean checkUnit(double nextDist) {
+
+        return (nextDist + "").startsWith("0.");
+    }
+
     public static int convertIntoHrs(int mins) {
         int value = 0;
 

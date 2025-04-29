@@ -737,7 +737,7 @@ public class CarMapContainer implements DefaultLifecycleObserver, LocationEngine
     }
 
     public void addMarker(ELocation eLocation) {
-        if(eLocation.latitude == null){
+        if (eLocation.latitude == null) {
             return;
         }
         LatLng latLng = new LatLng(eLocation.latitude, eLocation.longitude);
@@ -877,7 +877,12 @@ public class CarMapContainer implements DefaultLifecycleObserver, LocationEngine
         if (carContext == null)
             return;
         ArrayList<Point> points = new ArrayList<>();
-        String locations = MapplsNavigationHelper.getInstance().getCurrentRoute().geometry();
+        String locations;
+        if (MapplsNavigationHelper.getInstance().getCurrentRoute() != null && MapplsNavigationHelper.getInstance().getCurrentRoute().geometry() != null) {
+            locations = MapplsNavigationHelper.getInstance().getCurrentRoute().geometry();
+        } else {
+            return;
+        }
 
         Log.e("locationnsss:: ", "" + MapplsNavigationHelper.getInstance().getCurrentRoute().geometry());
         if (directionPolylinePlugin != null) {
@@ -1125,6 +1130,7 @@ public class CarMapContainer implements DefaultLifecycleObserver, LocationEngine
 
     @Override
     public void onRouteProgress(@NonNull AdviseInfo adviseInfo) {
+        
 
         if (carContext != null) {
             adviseInfoLiveData.postValue(adviseInfo);
